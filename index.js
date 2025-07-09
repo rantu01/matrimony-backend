@@ -13,11 +13,10 @@ const PORT = process.env.PORT || 5000;
 
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://soulmate-here.surge.sh"],
+    origin: "http://localhost:5173", // Or whatever your frontend port is
     credentials: true,
   })
 );
-
 app.use(express.json());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@skillstack.6gwde6m.mongodb.net/?retryWrites=true&w=majority&appName=skillStack`;
@@ -130,6 +129,26 @@ async function run() {
         res.json({ message: "User logged in", token, success: true });
       } catch (error) {
         res.status(500).json({ message: error.message });
+      }
+    });
+
+    // GET
+    app.get("/api/status/:uid", verifyJWT, async (req, res) => {
+      try {
+        const uid = req.params.uid;
+        const user = await db.collection("users").findOne({ uid });
+
+        if (!user) {
+          return res.status(404).json({ message: "User not found" });
+        }
+
+        // Example: assuming premium status is stored in user.status or user.isPremium
+        const status = user.status || (user.isPremium ? "approved" : "pending");
+
+        return res.json({ status });
+      } catch (error) {
+        console.error("Error fetching user status:", error);
+        return res.status(500).json({ message: "Failed to fetch user status" });
       }
     });
 
@@ -463,12 +482,14 @@ async function run() {
     });
 
     // GET /api/my-contact-requests
+    // Middleware must decode JWT and attach `req.user.uid`
     app.get("/api/my-contact-requests", verifyJWT, async (req, res) => {
       try {
         const uid = req.user.uid;
+
         const requests = await db
           .collection("contactRequests")
-          .find({ requesterUid: uid })
+          .find({ uid }) // 🔥 Make sure your documents have "uid" field
           .toArray();
 
         res.json({ requests });
@@ -668,7 +689,7 @@ async function run() {
           .collection("premiumRequests")
           .updateOne(
             { email, biodataId: parseInt(biodataId) },
-            { $set: { status: "approved" } }
+            { $set: { isPremium: true } }
           );
 
         res.json({ success: true });
