@@ -13,10 +13,14 @@ const PORT = process.env.PORT || 5000;
 
 app.use(
   cors({
-    origin: "http://localhost:5173", // Or whatever your frontend port is
+    origin: [
+      "http://localhost:5173",
+      "https://soulmate-here.surge.sh",
+    ],
     credentials: true,
   })
 );
+
 app.use(express.json());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@skillstack.6gwde6m.mongodb.net/?retryWrites=true&w=majority&appName=skillStack`;
