@@ -421,6 +421,20 @@ async function run() {
       }
     });
 
+    // GET /api/favourites/check?userId=uid&biodataId=1
+    app.get("/api/favourites/check", verifyJWT, async (req, res) => {
+      const { userId, biodataId } = req.query;
+      try {
+        const exists = await favouritesCollection.findOne({
+          uid: userId,
+          biodataId: parseInt(biodataId),
+        });
+        res.json({ isFavorite: !!exists });
+      } catch (err) {
+        res.status(500).json({ error: "Failed to check favourite status." });
+      }
+    });
+
     // GET /api/my-favourites
     app.get("/api/my-favourites", verifyJWT, async (req, res) => {
       try {
