@@ -719,7 +719,7 @@ async function run() {
           .collection("premiumRequests")
           .updateOne(
             { email, biodataId: parseInt(biodataId) },
-            { $set: { isPremium: true } }
+            { $set: { status: "approved" } }
           );
 
         res.json({ success: true });
