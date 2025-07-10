@@ -702,24 +702,22 @@ async function run() {
         }
 
         // Update biodata to premium
-        await db
-          .collection("biodatas")
-          .updateOne(
-            { biodataId: parseInt(biodataId) },
-            { $set: { isPremium: true } }
-          );
+        await db.collection("biodatas").updateOne(
+          { biodataId }, // keep as string
+          { $set: { isPremium: true } }
+        );
 
         // Update user to premium (optional)
         await db
           .collection("users")
           .updateOne({ email }, { $set: { isPremium: true } });
 
-        // Update request status
+        // ✅ Fix: Match using string biodataId
         await db
           .collection("premiumRequests")
           .updateOne(
-            { email, biodataId: parseInt(biodataId) },
-            { $set: { status: "approved" } }
+            { email, biodataId },
+            { $set: { status: "approved", isPremium: true } }
           );
 
         res.json({ success: true });
