@@ -433,9 +433,9 @@ async function run() {
     });
 
     // GET /api/favourites/check?userId=uid&biodataId=1
-    app.get("/api/favourites/check", verifyJWT, async (req, res) => {
-      const userId = req.user.uid;
-      const { biodataId } = req.query;
+    app.get("/api/favourites/check/:biodataId", verifyJWT, async (req, res) => {
+      const userId = req.user.uid; // from JWT
+      const { biodataId } = req.params;
 
       try {
         const exists = await favourites.findOne({
@@ -444,6 +444,7 @@ async function run() {
         });
         res.json({ isFavorite: !!exists });
       } catch (err) {
+        console.error(err);
         res.status(500).json({ error: "Failed to check favourite status." });
       }
     });
