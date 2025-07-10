@@ -434,9 +434,11 @@ async function run() {
 
     // GET /api/favourites/check?userId=uid&biodataId=1
     app.get("/api/favourites/check", verifyJWT, async (req, res) => {
-      const { userId, biodataId } = req.query;
+      const userId = req.user.uid;
+      const { biodataId } = req.query;
+
       try {
-        const exists = await favouritesCollection.findOne({
+        const exists = await favourites.findOne({
           uid: userId,
           biodataId: parseInt(biodataId),
         });
