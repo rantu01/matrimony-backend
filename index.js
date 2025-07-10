@@ -438,7 +438,8 @@ async function run() {
       const { biodataId } = req.params;
 
       try {
-        const exists = await favourites.findOne({
+        const collection = db.collection("favourites"); // <--- Add this line
+        const exists = await collection.findOne({
           uid: userId,
           biodataId: parseInt(biodataId),
         });
@@ -558,6 +559,40 @@ async function run() {
       }
     });
 
+    app.get("/api/admin/success-stories", async (req, res) => {
+      try {
+        const collection = db.collection("successStories");
+
+        const stories = await collection
+          .find({})
+          .project({
+            _id: 1,
+            selfBiodataId: 1,
+            partnerBiodataId: 1,
+            image: 1,
+            story: 1,
+            createdAt: 1,
+            email: 1,
+          })
+          .toArray();
+
+        const formattedStories = stories.map((doc) => ({
+          _id: doc._id,
+          maleBiodataId: doc.selfBiodataId,
+          femaleBiodataId: doc.partnerBiodataId,
+          image: doc.image,
+          storyText: doc.story,
+          createdAt: doc.createdAt,
+          email: doc.email,
+        }));
+
+        res.json(formattedStories);
+      } catch (err) {
+        console.error("Failed to fetch success stories:", err);
+        res.status(500).json({ error: "Internal Server Error" });
+      }
+    });
+
     app.post("/api/create-payment-intent", verifyJWT, async (req, res) => {
       try {
         const { amount } = req.body;
@@ -578,6 +613,58 @@ async function run() {
         res.status(500).json({
           message: error.message || "Failed to create payment intent",
         });
+      }
+    });
+
+    // POST /api/payments/record
+    app.post("/api/payments/record", verifyJWT, async (req, res) => {
+      try {
+        const { biodataId, userEmail, amount } = req.body;
+        const userId = req.user.uid; // extracted from JWT
+
+        if (!biodataId || !userEmail || !amount) {
+          return res
+            .status(400)
+            .json({ success: false, message: "Missing required payment data" });
+        }
+
+        const paymentsCollection = db.collection("payments");
+
+        const paymentDoc = {
+          userId,
+          biodataId: Number(biodataId),
+          userEmail,
+          amount: Number(amount),
+          date: new Date(),
+          status: "paid",
+        };
+
+        const result = await paymentsCollection.insertOne(paymentDoc);
+
+        if (result.insertedId) {
+          return res.json({ success: true, message: "Payment recorded" });
+        } else {
+          return res
+            .status(500)
+            .json({ success: false, message: "Failed to record payment" });
+        }
+      } catch (error) {
+        console.error("Payment record error:", error);
+        res.status(500).json({ success: false, message: error.message });
+      }
+    });
+
+    app.get("/api/payments/summary", async (req, res) => {
+      try {
+        const paymentsCollection = db.collection("payments");
+        const totalPayments = await paymentsCollection.countDocuments({
+          status: "paid",
+        });
+
+        res.json({ totalPayments });
+      } catch (error) {
+        console.error("Error fetching payment summary:", error);
+        res.status(500).json({ message: "Failed to fetch payment summary" });
       }
     });
 
