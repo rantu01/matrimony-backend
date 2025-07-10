@@ -726,6 +726,29 @@ async function run() {
       }
     });
 
+    app.get("/api/premiumRequests/status/:userId", async (req, res) => {
+      try {
+        const userId = req.params.userId;
+
+        if (!userId) {
+          return res.status(400).json({ message: "User ID is required." });
+        }
+
+        const request = await db
+          .collection("premiumRequests")
+          .findOne({ uid: userId });
+
+        if (!request) {
+          return res.json({ status: "none" }); // no request found
+        }
+
+        res.json({ status: request.status || "pending" });
+      } catch (err) {
+        console.error("Error fetching premium request status:", err);
+        res.status(500).json({ message: "Internal server error" });
+      }
+    });
+
     app.get("/api/contact-requests", async (req, res) => {
       try {
         const requests = await db
