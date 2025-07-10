@@ -13,7 +13,11 @@ const PORT = process.env.PORT || 5000;
 
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://soulmate-here.surge.sh"],
+    origin: [
+      "http://localhost:5173",
+      "https://soulmate-here.surge.sh",
+      "https://matrimony-c85da.web.app/",
+    ],
     credentials: true,
   })
 );
