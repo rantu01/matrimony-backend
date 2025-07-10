@@ -13,10 +13,7 @@ const PORT = process.env.PORT || 5000;
 
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "https://soulmate-here.surge.sh",
-    ],
+    origin: ["http://localhost:5173", "https://soulmate-here.surge.sh"],
     credentials: true,
   })
 );
@@ -168,10 +165,10 @@ async function run() {
     }
 
     // Create or edit biodata (user can only have one)
-    app.post("/api/biodata", async (req, res) => {
+    app.post("/api/biodata", verifyJWT, async (req, res) => {
       try {
         const biodataCollection = db.collection("biodatas");
-        const userId = req.user.uid;
+        const userId = req.user.uid; // Now req.user will be defined
         const biodataData = req.body;
 
         // Ensure user is only editing their own biodata
@@ -188,7 +185,10 @@ async function run() {
             { uid: userId },
             { $set: biodataData }
           );
-          return res.json({ message: "Biodata updated successfully" });
+          return res.json({
+            success: true,
+            message: "Biodata updated successfully",
+          });
         } else {
           const newId = await getNextBiodataId();
           biodataData.uid = userId;
@@ -197,12 +197,13 @@ async function run() {
           biodataData.premium = false; // default
           await biodataCollection.insertOne(biodataData);
           return res.status(201).json({
+            success: true,
             message: "Biodata created successfully",
             biodataId: newId,
           });
         }
       } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ success: false, message: error.message });
       }
     });
 
