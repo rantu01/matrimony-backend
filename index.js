@@ -119,15 +119,22 @@ async function run() {
           return res.status(404).json({ message: "User not found" });
         }
 
+        // Generate JWT
         const token = jwt.sign(
           { uid: user.uid, email: user.email, role: user.role },
           process.env.JWT_SECRET,
-          {
-            expiresIn: "7d",
-          }
+          { expiresIn: "7d" }
         );
 
-        res.json({ message: "User logged in", token, success: true });
+        // Prepare a clean user object (remove Mongo _id and Date object structure)
+        const { _id, createdAt, ...cleanUser } = user;
+
+        res.json({
+          message: "User logged in",
+          token,
+          user: cleanUser, // 👈 send cleaned user object
+          success: true,
+        });
       } catch (error) {
         res.status(500).json({ message: error.message });
       }
