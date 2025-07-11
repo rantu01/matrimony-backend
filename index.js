@@ -228,33 +228,14 @@ async function run() {
         const query = !isNaN(parsedId)
           ? { biodataId: parsedId }
           : { biodataId: rawId };
+
         const biodataCollection = db.collection("biodatas");
         const biodata = await biodataCollection.findOne(query);
 
         if (!biodata)
           return res.status(404).json({ message: "Biodata not found" });
 
-        const userId = req.user.uid;
-        const userEmail = req.user.email;
-
-        const isOwner = biodata.uid === userId;
-        const isPremium = biodata.premium === true;
-
-        // Check if user has an approved contact request for this biodata
-        const contactRequestCollection = db.collection("contactRequests");
-        const approvedRequest = await contactRequestCollection.findOne({
-          biodataId: biodata.biodataId,
-          userEmail: userEmail,
-          status: "approved",
-        });
-
-        // Only show sensitive contact info if owner, premium, or has approved request
-        if (!isOwner && !isPremium && !approvedRequest) {
-          delete biodata.contactEmail;
-          delete biodata.mobile;
-        }
-
-        res.json({ biodata });
+        res.json({ biodata }); // ✅ always send full biodata, including contact info
       } catch (error) {
         res.status(500).json({ message: error.message });
       }
