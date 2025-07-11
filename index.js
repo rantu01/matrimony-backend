@@ -167,12 +167,19 @@ async function run() {
     // Helper to get next biodataId (auto-increment)
     async function getNextBiodataId() {
       const biodataCollection = db.collection("biodatas");
+
       const lastBiodata = await biodataCollection
         .find()
         .sort({ biodataId: -1 })
         .limit(1)
         .toArray();
-      return lastBiodata.length === 0 ? 1 : lastBiodata[0].biodataId + 1;
+
+      const lastId =
+        lastBiodata.length === 0 ? 0 : Number(lastBiodata[0].biodataId);
+
+      const newId = lastId + 1;
+
+      return newId;
     }
 
     // Create or edit biodata (user can only have one)
