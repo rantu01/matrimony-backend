@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 dotenv.config();
 import Stripe from "stripe";
 import jwt from "jsonwebtoken";
-import { MongoClient, ServerApiVersion } from "mongodb";
+import { MongoClient, ServerApiVersion, ObjectId } from "mongodb";
 // Assuming you have Express app setup and Stripe installed
 const stripe = new Stripe(`${process.env.STRIPE_SECRET}`);
 
@@ -245,6 +245,36 @@ async function run() {
         res.json({ biodata }); // ✅ always send full biodata, including contact info
       } catch (error) {
         res.status(500).json({ message: error.message });
+      }
+    });
+
+    // DELETE /api/biodata/:biodataId
+    // DELETE /api/favourites/:biodataId
+    app.delete("/api/favourites/:biodataId", verifyJWT, async (req, res) => {
+      try {
+        const biodataId = parseInt(req.params.biodataId);
+        const uid = req.user.uid;
+
+        if (isNaN(biodataId)) {
+          return res
+            .status(400)
+            .json({ success: false, message: "Invalid biodataId" });
+        }
+
+        const favouritesCollection = db.collection("favourites");
+
+        const result = await favouritesCollection.deleteOne({ uid, biodataId });
+
+        if (result.deletedCount === 0) {
+          return res
+            .status(404)
+            .json({ success: false, message: "Favourite not found" });
+        }
+
+        res.json({ success: true, message: "Favourite removed successfully" });
+      } catch (error) {
+        console.error("Delete favourite error:", error);
+        res.status(500).json({ success: false, message: "Server error" });
       }
     });
 
@@ -876,6 +906,29 @@ async function run() {
       } catch (err) {
         console.error("Error fetching contact requests:", err);
         res.status(500).json({ message: "Failed to fetch contact requests." });
+      }
+    });
+
+    // DELETE /api/contact-request/:id
+    app.delete("/api/contact-request/:id", verifyJWT, async (req, res) => {
+      try {
+        const { id } = req.params;
+
+        const result = await db
+          .collection("contactRequests")
+          .deleteOne({ _id: new ObjectId(id), uid: req.user.uid });
+
+        if (result.deletedCount === 0) {
+          return res.status(404).json({
+            success: false,
+            message: "Request not found or unauthorized",
+          });
+        }
+
+        res.json({ success: true, message: "Request deleted successfully" });
+      } catch (err) {
+        console.error("Delete request error:", err);
+        res.status(500).json({ success: false, message: "Server error" });
       }
     });
 
